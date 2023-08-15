@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+
+    environment {
+        // Define environment variables here. For example:
+        DOCKER_IMAGE = 'myapp'
+        DOCKER_TAG = 'latest'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Get the code from a Git repository
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image
+                    sh "docker build -t $DOCKER_IMAGE:$DOCKER_TAG ."
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    // Log in to Docker registry (credentials should be stored securely in Jenkins)
+                    withCredentials([usernamePassword(credentialsId: 'dockerHubCredentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh "docker login -u $USERNAME -p $PASSWORD"
+                    }
+
+                    // Push the Docker image
+                    sh "docker push $DOCKER_IMAGE:$DOCKER_TAG"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Actions to always perform at the end of the pipeline, e.g., clean up resources
+            echo 'This will always run'
+        }
+        success {
+            // Actions to perform if the pipeline was successful
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            // Actions to perform if the pipeline failed
+            echo 'Pipeline failed!'
+        }
+    }
+}
